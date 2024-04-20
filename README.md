@@ -10,7 +10,7 @@ go build --ldflags="-X 'github.com/siteworxpro/rsa-file-encryption/printer.Versi
 
 ## Generating Keys
 
-Generates a set of RSA key pairs. Default size is 4096 bits. Minimum size is 1024 bits and maximum is 16384 bits
+Generates a set of RSA key pairs. Default size is 4096 bits. Minimum size is 2048 bits and maximum is 16384 bits
 
 ```
 NAME:
