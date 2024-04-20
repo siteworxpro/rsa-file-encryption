@@ -1,0 +1,4 @@
+.idea/
+*.pem*
+rsa-file-encryption
+dist/
