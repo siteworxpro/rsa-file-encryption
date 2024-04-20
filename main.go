@@ -13,7 +13,7 @@ func main() {
 
 	app := &cli.App{
 		Name:  "rsa-file-encryption",
-		Usage: "a file encryption tool using rsa key pairs to encrypt files using AES-256-GCM",
+		Usage: "a file encryption tool using rsa key pairs to encrypt files using AES-256-CBC",
 		Commands: []*cli.Command{
 			{
 				Name:    "encrypt",
