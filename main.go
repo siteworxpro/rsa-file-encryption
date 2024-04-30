@@ -5,6 +5,7 @@ import (
 	"github.com/siteworxpro/rsa-file-encryption/printer"
 	"github.com/urfave/cli/v2"
 	"os"
+	"time"
 )
 
 func main() {
@@ -12,8 +13,11 @@ func main() {
 	p.PrintTitle()
 
 	app := &cli.App{
-		Name:  "rsa-file-encryption",
-		Usage: "a file encryption tool using rsa key pairs to encrypt files using AES-256-CBC",
+		Name:                 "rsa-file-encryption",
+		Version:              printer.Version,
+		Compiled:             time.Now(),
+		EnableBashCompletion: true,
+		Usage:                "a file encryption tool using rsa key pairs to encrypt files using AES-256-CBC",
 		Commands: []*cli.Command{
 			{
 				Name:    "encrypt",
@@ -106,6 +110,8 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		p.LogError(err.Error())
+		p.LogError("error" + err.Error())
+
+		os.Exit(1)
 	}
 }
