@@ -1,11 +1,8 @@
 package commands
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
+	"github.com/siteworxpro/rsa-file-encryption/crypt"
 	"github.com/siteworxpro/rsa-file-encryption/printer"
 	"os"
 )
@@ -31,41 +28,24 @@ func GenerateKeypair(bitSize uint, path string, overwrite bool) error {
 	c := make(chan bool)
 
 	go p.LogSpinner("Generating RSA key...", c)
-	key, err := rsa.GenerateKey(rand.Reader, int(bitSize))
+
+	keyPem, pubPem, err := crypt.GenerateKeyPair(int(bitSize))
+
 	c <- true
 
-	if err != nil {
-		return err
-	}
-
-	pub := key.Public()
-
-	keyPEM := pem.EncodeToMemory(
-		&pem.Block{
-			Type:  "RSA PRIVATE KEY",
-			Bytes: x509.MarshalPKCS1PrivateKey(key),
-		},
-	)
-
-	pubPEM := pem.EncodeToMemory(
-		&pem.Block{
-			Type:  "RSA PUBLIC KEY",
-			Bytes: x509.MarshalPKCS1PublicKey(pub.(*rsa.PublicKey)),
-		},
-	)
-
 	p.LogInfo("Writing private key...")
-	err = os.WriteFile(path, keyPEM, 0600)
+	err = os.WriteFile(path, keyPem, 0600)
 	if err != nil {
 		return err
 	}
 
 	p.LogInfo("Writing public key...")
-	err = os.WriteFile(path+".pub", pubPEM, 0644)
+	err = os.WriteFile(path+".pub", pubPem, 0644)
 	if err != nil {
 		return err
 	}
 
 	p.LogSuccess("Done!")
+
 	return nil
 }
