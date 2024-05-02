@@ -5,9 +5,22 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 )
 
 func GenerateKeyPair(bitSize int) ([]byte, []byte, error) {
+	if bitSize == 0 {
+		bitSize = 4096
+	}
+
+	if bitSize < 2048 {
+		return nil, nil, fmt.Errorf("key to weak. size must be greater than 2048")
+	}
+
+	if bitSize > 16384 {
+		return nil, nil, fmt.Errorf("key to large. size must be less than 16384")
+	}
+
 	key, err := rsa.GenerateKey(rand.Reader, bitSize)
 
 	if err != nil {

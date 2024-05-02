@@ -8,17 +8,6 @@ import (
 )
 
 func GenerateKeypair(bitSize uint, path string, overwrite bool) error {
-	if bitSize == 0 {
-		bitSize = 4096
-	}
-
-	if bitSize < 2048 {
-		return fmt.Errorf("key to weak. size must be greater than 2048")
-	}
-
-	if bitSize > 16384 {
-		return fmt.Errorf("key to large. size must be less than 16384")
-	}
 
 	if _, err := os.Stat(path); err == nil && !overwrite {
 		return fmt.Errorf("key file already exists - use another filename or -force (-F) to overwrite")

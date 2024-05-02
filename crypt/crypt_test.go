@@ -5,6 +5,23 @@ import (
 	"testing"
 )
 
+func TestLimitsKeySize(t *testing.T) {
+	_, _, err := GenerateKeyPair(512)
+	if err == nil {
+		t.Errorf("GenerateKeyPair returned no error")
+	}
+
+	_, _, err = GenerateKeyPair(16385)
+	if err == nil {
+		t.Errorf("GenerateKeyPair returned no error")
+	}
+
+	_, _, err = GenerateKeyPair(0)
+	if err != nil {
+		t.Errorf("GenerateKeyPair returned an error")
+	}
+}
+
 func TestEncryption(t *testing.T) {
 	data := []byte("hello world")
 
