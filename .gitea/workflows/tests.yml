@@ -1,0 +1,39 @@
+on:
+  push:
+    branches:
+      - "*"
+
+name: 🧪 ✨ Unit Tests Workflow
+
+jobs:
+  test-go:
+    env:
+      GO_VERSION: '1.24.3'
+    name: 🔍 🐹 Go Tests
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: 🛡️ 🔒 Add Siteworx CA Certificates
+        run: |
+          apt update && apt install -yq ca-certificates curl
+          curl -Ls https://siteworxpro.com/hosted/Siteworx+Root+CA.pem -o /usr/local/share/ca-certificates/sw.crt
+          update-ca-certificates
+
+      - name: ⚙️ 🐹 Set up Go Environment
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: 📖 🔍 Checkout Repository Code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: 📦 📥 Install Dependencies
+        run: |
+          go mod download
+
+      - name: ✅ 🔍 Run Go Tests
+        run: |
+          go test -v ./... -coverprofile=coverage.out
