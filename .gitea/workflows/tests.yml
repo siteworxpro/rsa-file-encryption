@@ -8,7 +8,7 @@ name: 🧪 ✨ Unit Tests Workflow
 jobs:
   test-go:
     env:
-      GO_VERSION: '1.24.3'
+      GO_VERSION: '1.25.0'
     name: 🔍 🐹 Go Tests
     runs-on: ubuntu-latest
     steps:
