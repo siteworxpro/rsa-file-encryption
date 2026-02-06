@@ -7,6 +7,7 @@ import (
 	"crypto/sha512"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"os"
 )
 
@@ -85,6 +86,10 @@ func (f *EncryptedFile) GenerateSymmetricKey() error {
 func (f *EncryptedFile) ParsePublicPem() error {
 	pemKeyBin, _ := pem.Decode(f.PublicPem)
 
+	if pemKeyBin == nil {
+		return fmt.Errorf("failed to parse PEM block containing the public key")
+	}
+
 	if bytes.Contains(f.PublicPem, []byte("-----BEGIN PUBLIC KEY-----")) {
 		key, err := x509.ParsePKIXPublicKey(pemKeyBin.Bytes)
 		if err != nil {
@@ -108,6 +113,10 @@ func (f *EncryptedFile) ParsePublicPem() error {
 
 func (f *EncryptedFile) ParsePrivatePem() error {
 	pemKeyBin, _ := pem.Decode(f.privatePem)
+
+	if pemKeyBin == nil {
+		return fmt.Errorf("failed to parse PEM block containing the private key")
+	}
 
 	if bytes.Contains(f.privatePem, []byte("-----BEGIN PRIVATE KEY-----")) {
 		key, err := x509.ParsePKCS8PrivateKey(pemKeyBin.Bytes)

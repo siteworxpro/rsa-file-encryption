@@ -4,15 +4,20 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/subtle"
 	"fmt"
 	"os"
 )
 
+const hmacKey = "::HMAC::"
+
 type EncryptedFile struct {
 	ciphertext      []byte
+	hmac            []byte
 	plainText       []byte
 	nonce           []byte
 	privatePem      []byte
@@ -25,7 +30,13 @@ type EncryptedFile struct {
 
 func (f *EncryptedFile) packFile() []byte {
 	file := append(f.nonce, f.ciphertext...)
-	return append(file, f.symmetricKeyEnc...)
+	file = append(file, f.symmetricKeyEnc...)
+	if len(f.hmac) > 0 {
+		file = append(file, []byte(hmacKey)...)
+		file = append(file, f.hmac...)
+	}
+
+	return file
 }
 
 func (f *EncryptedFile) EncryptFile() error {
@@ -48,7 +59,27 @@ func (f *EncryptedFile) EncryptFile() error {
 	cbc.CryptBlocks(ciphertext, plaintextP)
 	f.ciphertext = ciphertext
 
+	mac, err := f.generateHmac()
+	if err != nil {
+		return err
+	}
+
+	f.hmac = mac
+
 	return nil
+}
+
+func (f *EncryptedFile) generateHmac() ([]byte, error) {
+	if len(f.symmetricKey) == 0 {
+		return nil, fmt.Errorf("symmetric key is not set")
+	}
+
+	mac := hmac.New(sha256.New, f.symmetricKey)
+	mac.Write(f.nonce)
+	mac.Write(f.ciphertext)
+
+	f.hmac = mac.Sum(nil)
+	return f.hmac, nil
 }
 
 func (f *EncryptedFile) OsReadPlainTextFile(path string) error {
@@ -84,7 +115,21 @@ func (f *EncryptedFile) WriteDecryptedFileToDisk(filePath string) error {
 func (f *EncryptedFile) unpackFileAndDecrypt(packedFile []byte) error {
 	keyLen := f.privateKey.Size()
 
+	minReqLen := aes.BlockSize + keyLen + len(hmacKey)
+
+	if len(packedFile) < minReqLen {
+		return fmt.Errorf("packed file is too short to be valid")
+	}
+
+	if bytes.Contains(packedFile, []byte(hmacKey)) {
+		parts := bytes.SplitN(packedFile, []byte(hmacKey), 2)
+		packedFile, f.hmac = parts[0], parts[1]
+	}
+
 	lenWithoutKey := len(packedFile) - keyLen
+	if lenWithoutKey < aes.BlockSize {
+		return fmt.Errorf("packed file is too short to contain valid nonce and ciphertext")
+	}
 
 	packedFile, f.symmetricKeyEnc = packedFile[0:lenWithoutKey], packedFile[lenWithoutKey:]
 
@@ -93,10 +138,22 @@ func (f *EncryptedFile) unpackFileAndDecrypt(packedFile []byte) error {
 		return err
 	}
 
+	if len(f.hmac) > 0 {
+		mac, err := f.generateHmac()
+		if err != nil {
+			return err
+		}
+
+		if !hmac.Equal(mac, f.hmac) {
+			return fmt.Errorf("hmac verification failed")
+		}
+	}
+
 	a, err := aes.NewCipher(f.symmetricKey)
 	if err != nil {
 		return err
 	}
+
 	f.nonce, f.ciphertext = packedFile[0:aes.BlockSize], packedFile[aes.BlockSize:]
 
 	cbc := cipher.NewCBCDecrypter(a, f.nonce)
