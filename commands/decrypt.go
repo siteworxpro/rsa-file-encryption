@@ -30,24 +30,16 @@ func Decrypt(privateKeyPath string, filePath string, outFile string, force bool)
 		return err
 	}
 
-	p.LogInfo("Reading and decrypting file...")
 	c := make(chan bool)
 	go p.LogSpinner("Decrypting...", c)
 
-	err = encryptedFile.OsReadCipherTextFile(filePath)
+	err = encryptedFile.DecryptFilePath(filePath, outFile)
 	if err != nil {
 		return err
 	}
 
 	c <- true
 
-	p.LogInfo("Writing un-encrypted file...")
-	err = encryptedFile.WriteDecryptedFileToDisk(outFile)
-	if err != nil {
-		return err
-	}
-
 	p.LogSuccess("Done!")
-
 	return nil
 }

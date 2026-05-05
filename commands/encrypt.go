@@ -30,13 +30,11 @@ func Encrypt(publicKeyPath string, filePath string, force bool) error {
 		return err
 	}
 
-	size := encryptedFile.PublicKey.Size()
-	if size < 256 {
+	if encryptedFile.PublicKey.Size() < 256 {
 		return fmt.Errorf("key to weak. use stronger key > 2048 bits")
 	}
 
-	p.LogInfo("Reading file to encrypt...")
-	err = encryptedFile.OsReadPlainTextFile(filePath)
+	err = encryptedFile.GenerateSymmetricKey()
 	if err != nil {
 		return err
 	}
@@ -44,24 +42,12 @@ func Encrypt(publicKeyPath string, filePath string, force bool) error {
 	c := make(chan bool)
 	go p.LogSpinner("Encrypting...", c)
 
-	err = encryptedFile.GenerateSymmetricKey()
-	if err != nil {
-		return err
-	}
-
-	err = encryptedFile.EncryptFile()
+	err = encryptedFile.EncryptFilePath(filePath, filePath+".enc")
 	if err != nil {
 		return err
 	}
 
 	c <- true
-
-	p.LogInfo("Encrypted file successfully")
-	p.LogInfo("Writing file...")
-	err = encryptedFile.WriteEncryptFileToDisk(filePath)
-	if err != nil {
-		return err
-	}
 
 	p.LogSuccess("Done!")
 	return nil
