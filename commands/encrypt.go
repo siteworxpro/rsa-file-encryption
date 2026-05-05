@@ -2,9 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/siteworxpro/rsa-file-encryption/crypt"
 	"github.com/siteworxpro/rsa-file-encryption/printer"
-	"os"
 )
 
 func Encrypt(publicKeyPath string, filePath string, force bool) error {
@@ -39,15 +40,19 @@ func Encrypt(publicKeyPath string, filePath string, force bool) error {
 		return err
 	}
 
-	c := make(chan bool)
-	go p.LogSpinner("Encrypting...", c)
+	done := make(chan bool)
+	encErr := make(chan error, 1)
 
-	err = encryptedFile.EncryptFilePath(filePath, filePath+".enc")
-	if err != nil {
+	go func() {
+		encErr <- encryptedFile.EncryptFilePath(filePath, filePath+".enc")
+		done <- true
+	}()
+
+	p.LogSpinner("Encrypting...", done)
+
+	if err = <-encErr; err != nil {
 		return err
 	}
-
-	c <- true
 
 	p.LogSuccess("Done!")
 	return nil

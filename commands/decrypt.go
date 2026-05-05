@@ -30,15 +30,19 @@ func Decrypt(privateKeyPath string, filePath string, outFile string, force bool)
 		return err
 	}
 
-	c := make(chan bool)
-	go p.LogSpinner("Decrypting...", c)
+	done := make(chan bool)
+	decErr := make(chan error, 1)
 
-	err = encryptedFile.DecryptFilePath(filePath, outFile)
-	if err != nil {
+	go func() {
+		decErr <- encryptedFile.DecryptFilePath(filePath, outFile)
+		done <- true
+	}()
+
+	p.LogSpinner("Decrypting...", done)
+
+	if err = <-decErr; err != nil {
 		return err
 	}
-
-	c <- true
 
 	p.LogSuccess("Done!")
 	return nil

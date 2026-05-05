@@ -14,16 +14,29 @@ func GenerateKeypair(bitSize uint, path string, overwrite bool) error {
 	}
 
 	p := printer.NewPrinter()
-	c := make(chan bool)
+	done := make(chan bool)
+	type keyResult struct {
+		keyPem, pubPem []byte
+		err            error
+	}
+	genErr := make(chan keyResult, 1)
 
-	go p.LogSpinner("Generating RSA key...", c)
+	go func() {
+		k, pub, err := crypt.GenerateKeyPair(int(bitSize))
+		genErr <- keyResult{k, pub, err}
+		done <- true
+	}()
 
-	keyPem, pubPem, err := crypt.GenerateKeyPair(int(bitSize))
+	p.LogSpinner("Generating RSA key...", done)
 
-	c <- true
+	result := <-genErr
+	if result.err != nil {
+		return result.err
+	}
+	keyPem, pubPem := result.keyPem, result.pubPem
 
 	p.LogInfo("Writing private key...")
-	err = os.WriteFile(path, keyPem, 0600)
+	err := os.WriteFile(path, keyPem, 0600)
 	if err != nil {
 		return err
 	}
